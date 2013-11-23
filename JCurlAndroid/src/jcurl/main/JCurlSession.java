@@ -24,6 +24,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.params.HttpClientParams;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.cookie.Cookie;
@@ -33,6 +34,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.impl.cookie.BasicClientCookie;
 import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
@@ -74,9 +76,12 @@ public class JCurlSession {
 	JCurlSession() {
 		HttpParams params = new BasicHttpParams();
 		SchemeRegistry registry = new SchemeRegistry();
-				
+		
+		//set timeout
+		HttpConnectionParams.setSoTimeout(params, timeout);
+		
 		cm = new ThreadSafeClientConnManager(params, registry);		
-		client = new DefaultHttpClient(cm, params);
+		client = new DefaultHttpClient(cm, params);		
 		
 		client.setCookieStore(cookieStore);
 	}
@@ -153,6 +158,8 @@ public class JCurlSession {
 	private JCurlResponse callCurl(String curlString) throws ScrapeException {
 		log.fine(MessageFormat.format("Calling curl string {0}", curlString));
 
+		HttpParams params = client.getParams();
+		
 		log.fine("Converting curl string to curl object");
 		// convert string to curl object
 		CurlObject curlObject = CurlConverter.convertCurl(curlString);
@@ -162,11 +169,9 @@ public class JCurlSession {
 		try {
 			// set http method
 			request = getRequestObject(curlObject);
-
-			//set timeout
 			
 			//set follow redirects
-			//curlObject.isFollowRedirects()
+			HttpClientParams.setRedirecting(params, curlObject.isFollowRedirects());
 			
 			log.fine("Connection created, adding headers now");
 
