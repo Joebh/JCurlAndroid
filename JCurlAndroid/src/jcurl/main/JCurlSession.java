@@ -86,6 +86,40 @@ public class JCurlSession {
 		client.setCookieStore(cookieStore);
 	}
 
+	/**
+	 * Input a file that contains curl string
+	 * 
+	 * @Todo add caching of file string
+	 * @param curlFile
+	 * @param args
+	 * @return
+	 * @throws IOException
+	 */
+	public JCurlResponse callCurl(File curlFile, KeyValuePair... args)
+			throws ScrapeException {
+		try {
+			String curlString = convertStreamToString(new FileInputStream(curlFile));
+			log.info(MessageFormat.format("Read curl string {0}", curlString));
+			return callCurl(curlString, args);
+		} catch (IOException e) {
+			throw new ScrapeException(e);
+		}
+	}
+	
+	private String convertStreamToString(InputStream is) throws ScrapeException{
+	    BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+	    StringBuilder sb = new StringBuilder();
+	    String line = null;
+	    try {
+			while ((line = reader.readLine()) != null) {
+			  sb.append(line).append("\n");
+			}
+		} catch (IOException e) {
+			log.log(Level.SEVERE, "", e);
+			throw new ScrapeException(e);
+		}
+	    return sb.toString();
+	}
 
 	public String getFrontParamDetect() {
 		return frontParamDetect;
