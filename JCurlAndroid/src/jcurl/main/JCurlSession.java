@@ -90,6 +90,22 @@ public class JCurlSession {
 	 * Input a file that contains curl string
 	 * 
 	 * @Todo add caching of file string
+	 * @param curlFile as inputstream
+	 * @param args
+	 * @return
+	 * @throws IOException
+	 */
+	public JCurlResponse callCurl(InputStream curlFileUS, KeyValuePair... args)
+			throws ScrapeException {
+		String curlString = convertStreamToString(curlFileUS);
+		log.info(MessageFormat.format("Read curl string {0}", curlString));
+		return callCurl(curlString, args);
+	} 
+	
+	/**
+	 * Input a file that contains curl string
+	 * 
+	 * @Todo add caching of file string
 	 * @param curlFile
 	 * @param args
 	 * @return
