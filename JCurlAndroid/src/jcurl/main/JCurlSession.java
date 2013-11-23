@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.Map;
 import java.util.logging.Level;
@@ -39,7 +38,6 @@ import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.SyncBasicHttpContext;
 
-import android.net.http.AndroidHttpClient;
 
 public class JCurlSession {
 
@@ -65,10 +63,9 @@ public class JCurlSession {
 
 	private CookieStore cookieStore = new BasicCookieStore();
 
-	
-	private ClientConnectionManager cm;
+	private ThreadSafeClientConnManager cm;
 
-	private HttpClient client;
+	private DefaultHttpClient client;
 
 	/**
 	 * Create a new default JCurlSession instance timeout is infinite/0
@@ -77,10 +74,11 @@ public class JCurlSession {
 	JCurlSession() {
 		HttpParams params = new BasicHttpParams();
 		SchemeRegistry registry = new SchemeRegistry();
+				
+		cm = new ThreadSafeClientConnManager(params, registry);		
+		client = new DefaultHttpClient(cm, params);
 		
-		cm = new ThreadSafeClientConnManager(params, registry);
-		
-		client = new DefaultHttpClient(cm, params);		
+		client.setCookieStore(cookieStore);
 	}
 
 	/**
@@ -94,7 +92,6 @@ public class JCurlSession {
 	 */
 	public JCurlResponse callCurl(File curlFile, KeyValuePair... args)
 			throws ScrapeException {
-		FileInputStream fis;
 		try {
 			String curlString = convertStreamToString(new FileInputStream(curlFile));
 			log.info(MessageFormat.format("Read curl string {0}", curlString));
