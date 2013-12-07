@@ -26,7 +26,11 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.params.HttpClientParams;
 import org.apache.http.conn.ClientConnectionManager;
+import org.apache.http.conn.scheme.PlainSocketFactory;
+import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
+import org.apache.http.conn.scheme.SocketFactory;
+import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.cookie.Cookie;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCookieStore;
@@ -40,6 +44,9 @@ import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.SyncBasicHttpContext;
 
+import android.app.Application;
+import android.content.Context;
+import android.util.Log;
 
 public class JCurlSession {
 
@@ -68,6 +75,7 @@ public class JCurlSession {
 	private ThreadSafeClientConnManager cm;
 
 	private DefaultHttpClient client;
+	
 
 	/**
 	 * Create a new default JCurlSession instance timeout is infinite/0
@@ -76,13 +84,16 @@ public class JCurlSession {
 	JCurlSession() {
 		HttpParams params = new BasicHttpParams();
 		SchemeRegistry registry = new SchemeRegistry();
-		
-		//set timeout
+		registry.register(new Scheme("http", PlainSocketFactory
+				.getSocketFactory(), 80));
+		//registry.register(new Scheme("https", getHttpsSocketFactory(), 443));
+
+		// set timeout
 		HttpConnectionParams.setSoTimeout(params, timeout);
-		
-		cm = new ThreadSafeClientConnManager(params, registry);		
-		client = new DefaultHttpClient(cm, params);		
-		
+
+		cm = new ThreadSafeClientConnManager(params, registry);
+		client = new DefaultHttpClient(cm, params);
+
 		client.setCookieStore(cookieStore);
 	}
 
@@ -90,7 +101,8 @@ public class JCurlSession {
 	 * Input a file that contains curl string
 	 * 
 	 * @Todo add caching of file string
-	 * @param curlFile as inputstream
+	 * @param curlFile
+	 *            as inputstream
 	 * @param args
 	 * @return
 	 * @throws IOException
@@ -100,8 +112,8 @@ public class JCurlSession {
 		String curlString = convertStreamToString(curlFileUS);
 		log.info(MessageFormat.format("Read curl string {0}", curlString));
 		return callCurl(curlString, args);
-	} 
-	
+	}
+
 	/**
 	 * Input a file that contains curl string
 	 * 
@@ -114,27 +126,28 @@ public class JCurlSession {
 	public JCurlResponse callCurl(File curlFile, KeyValuePair... args)
 			throws ScrapeException {
 		try {
-			String curlString = convertStreamToString(new FileInputStream(curlFile));
+			String curlString = convertStreamToString(new FileInputStream(
+					curlFile));
 			log.info(MessageFormat.format("Read curl string {0}", curlString));
 			return callCurl(curlString, args);
 		} catch (IOException e) {
 			throw new ScrapeException(e);
 		}
 	}
-	
-	private String convertStreamToString(InputStream is) throws ScrapeException{
-	    BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-	    StringBuilder sb = new StringBuilder();
-	    String line = null;
-	    try {
+
+	private String convertStreamToString(InputStream is) throws ScrapeException {
+		BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+		StringBuilder sb = new StringBuilder();
+		String line = null;
+		try {
 			while ((line = reader.readLine()) != null) {
-			  sb.append(line).append("\n");
+				sb.append(line).append("\n");
 			}
 		} catch (IOException e) {
 			log.log(Level.SEVERE, "", e);
 			throw new ScrapeException(e);
 		}
-	    return sb.toString();
+		return sb.toString();
 	}
 
 	public String getFrontParamDetect() {
@@ -175,7 +188,7 @@ public class JCurlSession {
 		log.fine(MessageFormat.format("Calling curl string {0}", curlString));
 
 		HttpParams params = client.getParams();
-		
+
 		log.fine("Converting curl string to curl object");
 		// convert string to curl object
 		CurlObject curlObject = CurlConverter.convertCurl(curlString);
@@ -185,10 +198,11 @@ public class JCurlSession {
 		try {
 			// set http method
 			request = getRequestObject(curlObject);
-			
-			//set follow redirects
-			HttpClientParams.setRedirecting(params, curlObject.isFollowRedirects());
-			
+
+			// set follow redirects
+			HttpClientParams.setRedirecting(params,
+					curlObject.isFollowRedirects());
+
 			log.fine("Connection created, adding headers now");
 
 			// iterate over headers and add to request properties
@@ -200,7 +214,8 @@ public class JCurlSession {
 			log.fine("Trying to connect to url");
 
 			// connect to the url
-			HttpContext context = new SyncBasicHttpContext(new BasicHttpContext());
+			HttpContext context = new SyncBasicHttpContext(
+					new BasicHttpContext());
 
 			HttpResponse response = client.execute(request, context);
 
